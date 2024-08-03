@@ -97,27 +97,27 @@ Requires Python and the `redfish` library. Install it using:
                 </tr>
                 <tr>
                     <td>login_password</td>
-                    <td>ilo user password</td>
+                    <td>ilo user<br> password</td>
                     <td>str</td>
                 </tr>
                 <tr>
                     <td>mintemp</td>
-                    <td>lowest temperature</td>
+                    <td>lowest<br> temperature</td>
                     <td>int</td>
                 </tr>
                 <tr>
                     <td>maxtemp</td>
-                    <td>highest temperature</td>
+                    <td>highest<br> temperature</td>
                     <td>int</td>
                 </tr>
                 <tr>
                     <td>avgtemp</td>
-                    <td>average temperature</td>
+                    <td>average<br> temperature</td>
                     <td>float</td>
                 </tr>
                 <tr>
                     <td>power_state</td>
-                    <td>server power status</td>
+                    <td>server power<br> status</td>
                     <td>bool</td>
                 </tr>
                 <tr>
