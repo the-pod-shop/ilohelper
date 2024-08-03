@@ -1,0 +1,1149 @@
+
+import sys
+import redfish
+
+import json
+import numpy
+class IloRedfishManager:
+    def __init__(self, iLO, login_account, login_password):
+        self.iLO_host = f"https://{iLO}"
+        self.login_account = login_account
+        self.login_password = login_password
+        self.mintemp=0
+        self.maxtemp=0
+        print("initialized")
+        self.client = redfish.redfish_client(
+            base_url=self.iLO_host,
+            username=self.login_account,
+            password=self.login_password,
+            default_prefix='/redfish/v1'
+        )
+        try:
+            self.client.login(auth="basic")
+            print("Login erfolgreich.")
+            status = self.get_server_status()
+        except Exception as e:
+            print(f"Fehler beim Login: {str(e)}")
+            raise
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print("destroy object")
+        if self.client:
+            self.client.logout()
+            print("Logout erfolgreich.")
+
+    def get_temperatures(self):
+        if self.client:
+            try:
+                response = self.client.get("/redfish/v1/Chassis/1/Thermal/")
+                sensors_data = response.dict["Temperatures"]
+                temperatures = []
+                for sensor in sensors_data:
+                    sensor_value =sensor["ReadingCelsius"]
+                    print("sensor" + sensor["Name"]+ " has " + str(sensor_value) + " degrees")
+                    temperatures.append(sensor_value)
+                    self.mintemp = sensor_value if sensor_value < self.mintemp else self.mintemp
+                    self.maxtemp = sensor_value if sensor_value > self.maxtemp else self.maxtemp
+                self.avgtemp=numpy.mean(temperatures)
+                print("mintemp " + str(self.mintemp))
+                print("maxtemp " + str(self.maxtemp))
+                print("avg " + str(self.avgtemp))
+                return temperatures
+            except Exception as e:
+                print(f"Fehler beim Abrufen der Temperaturdaten: {str(e)}")
+                return {}
+        else:
+            return {}
+    def get_server_status(self):
+        """Gibt den Status des Servers zurück."""
+        if self.client:
+            try:
+                self.get_temperatures()
+                response = self.client.get("/redfish/v1/Systems/1")
+                status=response.dict
+                power_state = status["PowerState"]
+                self.power_state = True if power_state == "Off" else False
+                self.memory=status["MemorySummary"]["TotalSystemMemoryGiB"]
+                self.cpu=status["ProcessorSummary"]
+                print("power" + (power_state))
+                print("memory: " + str(self.memory ))
+                print("cpu: " )
+                print(self.cpu)
+                return status
+            except Exception as e:
+                print(f"Fehler beim Abrufen des Status: {str(e)}")
+                return None
+        else:
+            return None
+
+    def start_server(self):
+        """Startet den Server."""
+        if self.client:
+            try:
+                self.client.post("/redfish/v1/Systems/1/Actions/ComputerSystem.Start")
+                print("Serverstart-Anfrage gesendet.")
+            except Exception as e:
+                print(f"Fehler beim Starten des Servers: {str(e)}")
+
+
+# Beispiel für die Verwendung der Klasse
+if __name__ == "__main__":
+    iLO = sys.argv[1]  #"ILO_Hostname_Or_IP"
+    login_account = sys.argv[2] # "admin"
+    login_password =sys.argv[3] # "Password"
+    print(sys.argv)
+    client = IloRedfishManager(iLO, login_account, login_password)
+
+iloExample={
+    "@odata.context": "/redfish/v1/$metadata#Systems/Members/$entity",
+    "@odata.id": "/redfish/v1/Systems/1/",
+    "@odata.type": "#ComputerSystem.1.0.1.ComputerSystem",
+    "Actions": {
+        "#ComputerSystem.Reset": {
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff",
+                "ForceRestart",
+                "Nmi",
+                "PushPowerButton"
+            ],
+            "target": "/redfish/v1/Systems/1/Actions/ComputerSystem.Reset/"
+        }
+    },
+    "AssetTag": "                                ",
+    "BiosVersion": "P72 02/10/2014",
+    "Boot": {
+        "BootSourceOverrideEnabled": "Disabled",
+        "BootSourceOverrideSupported": [
+            "None",
+            "Floppy",
+            "Cd",
+            "Hdd",
+            "Usb",
+            "Utilities",
+            "BiosSetup",
+            "Pxe"
+        ],
+        "BootSourceOverrideTarget": "None"
+    },
+    "Description": "Computer System View",
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/"
+    },
+    "HostName": "Big",
+    "Id": "1",
+    "IndicatorLED": "Off",
+    "Links": {
+        "Chassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/1/"
+            }
+        ],
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/1/"
+            }
+        ]
+    },
+    "LogServices": {
+        "@odata.id": "/redfish/v1/Systems/1/LogServices/"
+    },
+    "Manufacturer": "HPE",
+    "MemorySummary": {
+        "Status": {
+            "HealthRollup": "OK"
+        },
+        "TotalSystemMemoryGiB": 96
+    },
+    "Model": "ProLiant ML350p Gen8",
+    "Name": "Computer System",
+    "Oem": {
+        "Hp": {
+            "@odata.type": "#HpComputerSystemExt.1.2.2.HpComputerSystemExt",
+            "Actions": {
+                "#HpComputerSystemExt.PowerButton": {
+                    "PushType@Redfish.AllowableValues": [
+                        "Press",
+                        "PressAndHold"
+                    ],
+                    "target": "/redfish/v1/Systems/1/Actions/Oem/Hp/ComputerSystemExt.PowerButton/"
+                },
+                "#HpComputerSystemExt.SystemReset": {
+                    "ResetType@Redfish.AllowableValues": [
+                        "ColdBoot",
+                        "AuxCycle"
+                    ],
+                    "target": "/redfish/v1/Systems/1/Actions/Oem/Hp/ComputerSystemExt.SystemReset/"
+                }
+            },
+            "Bios": {
+                "Backup": {
+                    "Date": "02/10/2014",
+                    "Family": "P72",
+                    "VersionString": "P72 02/10/2014"
+                },
+                "Bootblock": {
+                    "Date": "03/05/2013",
+                    "Family": "P72",
+                    "VersionString": "P72 03/05/2013"
+                },
+                "Current": {
+                    "Date": "02/10/2014",
+                    "Family": "P72",
+                    "VersionString": "P72 02/10/2014"
+                },
+                "UefiClass": 0
+            },
+            "DeviceDiscoveryComplete": {
+                "AMSDeviceDiscovery": "NoAMS",
+                "DeviceDiscovery": "vAuxDeviceDiscoveryComplete",
+                "SmartArrayDiscovery": "Complete"
+            },
+            "IntelligentProvisioningIndex": 3,
+            "IntelligentProvisioningLocation": "System Board",
+            "IntelligentProvisioningVersion": "N/A",
+            "Links": {
+                "BIOS": {
+                    "@odata.id": "/redfish/v1/Systems/1/Bios/"
+                },
+                "EthernetInterfaces": {
+                    "@odata.id": "/redfish/v1/Systems/1/EthernetInterfaces/"
+                },
+                "FirmwareInventory": {
+                    "@odata.id": "/redfish/v1/Systems/1/FirmwareInventory/"
+                },
+                "Memory": {
+                    "@odata.id": "/redfish/v1/Systems/1/Memory/"
+                },
+                "NetworkAdapters": {
+                    "@odata.id": "/redfish/v1/Systems/1/NetworkAdapters/"
+                },
+                "PCIDevices": {
+                    "@odata.id": "/redfish/v1/Systems/1/PCIDevices/"
+                },
+                "PCISlots": {
+                    "@odata.id": "/redfish/v1/Systems/1/PCISlots/"
+                },
+                "SmartStorage": {
+                    "@odata.id": "/redfish/v1/Systems/1/SmartStorage/"
+                },
+                "SoftwareInventory": {
+                    "@odata.id": "/redfish/v1/Systems/1/SoftwareInventory/"
+                }
+            },
+            "PostState": "PowerOff",
+            "PowerAllocationLimit": 460,
+            "PowerAutoOn": "Restore",
+            "PowerOnDelay": "Minimum",
+            "PowerRegulatorMode": "Dynamic",
+            "PowerRegulatorModesSupported": [
+                "OSControl",
+                "Dynamic",
+                "Max",
+                "Min"
+            ],
+            "TrustedModules": [
+                {
+                    "Status": "NotPresent"
+                }
+            ],
+            "VirtualProfile": "Inactive"
+        }
+    },
+    "PowerState": "Off",
+    "ProcessorSummary": {
+        "Count": 2,
+        "Model": " Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz      ",
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "Processors": {
+        "@odata.id": "/redfish/v1/Systems/1/Processors/"
+    },
+    "SKU": "xxxxx    ",
+    "SerialNumber": "xxxxx      ",
+    "Status": {
+        "Health": "Warning",
+        "State": "Disabled"
+    },
+    "SystemType": "Physical",
+    "UUID": "xxxx"
+}
+
+thermalobject={
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/1/Thermal$entity",
+    "@odata.id": "/redfish/v1/Chassis/1/Thermal/",
+    "@odata.type": "#Thermal.1.1.0.Thermal",
+    "Fans": [
+        {
+            "FanName": "Fan 1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpServerFan.1.0.0.HpServerFan",
+                    "Location": "System"
+                }
+            },
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "FanName": "Fan 2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpServerFan.1.0.0.HpServerFan",
+                    "Location": "System"
+                }
+            },
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "FanName": "Fan 3",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpServerFan.1.0.0.HpServerFan",
+                    "Location": "System"
+                }
+            },
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "FanName": "Fan 4",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpServerFan.1.0.0.HpServerFan",
+                    "Location": "System"
+                }
+            },
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            }
+        }
+    ],
+    "Id": "Thermal",
+    "Name": "Thermal",
+    "Temperatures": [
+        {
+            "Name": "01-Inlet Ambient",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 1,
+                    "LocationYmm": 0
+                }
+            },
+            "PhysicalContext": "Intake",
+            "ReadingCelsius": 21,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 42,
+            "UpperThresholdFatal": 46
+        },
+        {
+            "Name": "02-CPU 1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 4,
+                    "LocationYmm": 8
+                }
+            },
+            "PhysicalContext": "CPU",
+            "ReadingCelsius": 40,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "03-CPU 2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 10,
+                    "LocationYmm": 7
+                }
+            },
+            "PhysicalContext": "CPU",
+            "ReadingCelsius": 40,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "04-P1 DIMM 1-6",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 11,
+                    "LocationYmm": 10
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 28,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 87,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "05-P1 DIMM 7-12",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 11,
+                    "LocationYmm": 4
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 30,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 87,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "06-P2 DIMM 1-6",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 4,
+                    "LocationYmm": 10
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 30,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 87,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "07-P2 DIMM 7-12",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 4,
+                    "LocationYmm": 4
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "08-HD Max",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 1,
+                    "LocationYmm": 0
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "09-Chipset",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 7,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 44,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 105,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "10-Chipset Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 8,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 80,
+            "UpperThresholdFatal": 85
+        },
+        {
+            "Name": "11-P/S 1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 12,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "PowerSupply",
+            "ReadingCelsius": 24,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "12-P/S 2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 12,
+                    "LocationYmm": 5
+                }
+            },
+            "PhysicalContext": "PowerSupply",
+            "ReadingCelsius": 26,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "13-P/S 3",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 12,
+                    "LocationYmm": 9
+                }
+            },
+            "PhysicalContext": "PowerSupply",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "14-P/S 4",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 12,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "PowerSupply",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "15-VR P1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 7
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 37,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "16-VR P2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 0,
+                    "LocationYmm": 8
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 36,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "17-VR P1 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 7
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 28,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 90,
+            "UpperThresholdFatal": 95
+        },
+        {
+            "Name": "18-VR P2 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 0,
+                    "LocationYmm": 8
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 90,
+            "UpperThresholdFatal": 95
+        },
+        {
+            "Name": "19-VR P1 Mem",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 10,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 30,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "20-VR P1 Mem",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 10,
+                    "LocationYmm": 2
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 34,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "21-VR P2 Mem",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 2,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 31,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "22-VR P2 Mem",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 1,
+                    "LocationYmm": 3
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 30,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 115,
+            "UpperThresholdFatal": 120
+        },
+        {
+            "Name": "23-Supercap Max",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 0,
+                    "LocationYmm": 0
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "24-HD Controller",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 4,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 40,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 100,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "25-iLO Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 10,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 23,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 80,
+            "UpperThresholdFatal": 85
+        },
+        {
+            "Name": "26-LOM",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 15,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "27-PCI 1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 0
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "28-PCI 2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "29-PCI 3",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "30-PCI 4",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 2
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "31-PCI 5",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "32-PCI 6",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "33-PCI 7",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "34-PCI 8",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 14
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "35-PCI 9",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 13,
+                    "LocationYmm": 15
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 0,
+            "Status": {
+                "State": "Absent"
+            },
+            "UpperThresholdCritical": 0,
+            "UpperThresholdFatal": 0
+        },
+        {
+            "Name": "36-PCI 1 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 0
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "37-PCI 2 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "38-PCI 3 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 1
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 26,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "39-PCI 4 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 2
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 27,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "40-PCI 5 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 27,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "41-PCI 6 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 26,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "42-PCI 7 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 13
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "43-PCI 8 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 14
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 23,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "44-PCI 9 Zone",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 14,
+                    "LocationYmm": 15
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 24,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 70,
+            "UpperThresholdFatal": 75
+        },
+        {
+            "Name": "45-P/S Board 1",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 7,
+                    "LocationYmm": 2
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 57,
+            "UpperThresholdFatal": 62
+        },
+        {
+            "Name": "46-P/S Board 2",
+            "Oem": {
+                "Hp": {
+                    "@odata.type": "#HpSeaOfSensors.1.0.0.HpSeaOfSensors",
+                    "LocationXmm": 6,
+                    "LocationYmm": 12
+                }
+            },
+            "PhysicalContext": "SystemBoard",
+            "ReadingCelsius": 25,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "UpperThresholdCritical": 57,
+            "UpperThresholdFatal": 62
+        }
+    ]
+}
