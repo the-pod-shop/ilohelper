@@ -12,15 +12,6 @@ Requires Python and the `redfish` library. Install it using:
   $ pip install redfish
   ```
 
-## Commands
-| Description | Method | Command |
-|---|---|---|
-| Get temperature data | ilohelper.get_temperatures() | temperatures |
-| Get server status | ilohelper.get_server_status() | serverStatus |
-| Start the server | ilohelper.start_server() | startServer |
-| Stop the server | ilohelper.stop_server() | stopServer |
-| Wait until the server boots up | ilohelper.waitForBoot() | waitForBoot |
-
 
 ## Usage
 
@@ -34,6 +25,115 @@ Requires Python and the `redfish` library. Install it using:
   ```
 - ***note that waitForBoot requires the optional server-ip argument for the ping command in the subprocess***
 --- 
+
+
+## Commands & Variables
+
+
+
+<table>
+    <tr>
+        <th>Commands</th>
+        <th>ilohelper Class Variables</th>
+    </tr>
+    <tr>
+        <td>
+            <table>
+                <tr>
+                    <th>Description</th>
+                    <th>Method</th>
+                    <th>Command</th>
+                </tr>
+                <tr>
+                    <td>Get temperature data</td>
+                    <td>ilohelper.get_temperatures()</td>
+                    <td>temperatures</td>
+                </tr>
+                <tr>
+                    <td>Get server status</td>
+                    <td>ilohelper.get_server_status()</td>
+                    <td>serverStatus</td>
+                </tr>
+                <tr>
+                    <td>Start the server</td>
+                    <td>ilohelper.start_server()</td>
+                    <td>startServer</td>
+                </tr>
+                <tr>
+                    <td>Stop the server</td>
+                    <td>ilohelper.stop_server()</td>
+                    <td>stopServer</td>
+                </tr>
+                <tr>
+                    <td>Wait until the server boots up</td>
+                    <td>ilohelper.waitForBoot()</td>
+                    <td>waitForBoot</td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                </tr>
+                <tr>
+                    <td>target_ip</td>
+                    <td>server ip</td>
+                    <td>str</td>
+                </tr>
+                <tr>
+                    <td>iLO_host</td>
+                    <td>ilo ip</td>
+                    <td>str</td>
+                </tr>
+                <tr>
+                    <td>login_account</td>
+                    <td>ilo user account</td>
+                    <td>str</td>
+                </tr>
+                <tr>
+                    <td>login_password</td>
+                    <td>ilo user password</td>
+                    <td>str</td>
+                </tr>
+                <tr>
+                    <td>mintemp</td>
+                    <td>lowest temperature</td>
+                    <td>int</td>
+                </tr>
+                <tr>
+                    <td>maxtemp</td>
+                    <td>highest temperature</td>
+                    <td>int</td>
+                </tr>
+                <tr>
+                    <td>avgtemp</td>
+                    <td>average temperature</td>
+                    <td>float</td>
+                </tr>
+                <tr>
+                    <td>power_state</td>
+                    <td>server power status</td>
+                    <td>bool</td>
+                </tr>
+                <tr>
+                    <td>memory</td>
+                    <td>memory in GB</td>
+                    <td>int</td>
+                </tr>
+                <tr>
+                    <td>cpu</td>
+                    <td>cpu object</td>
+                    <td>dict</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+
 
 ### Examples
 
@@ -58,6 +158,7 @@ Requires Python and the `redfish` library. Install it using:
       {'Count': 2, 'Model': ' Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz      ', 'Status': {'HealthRollup': 'OK'}}
     ```
 - start the server and wait untill its booted up:
+  - this will also 
   ```bash
   $ python ./utils/ilo/login.py waitForBoot 192.168.200.11 Administrator AGSBTGWW 192.168.200.12
   ```
