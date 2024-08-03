@@ -2,8 +2,8 @@
 a little python wrapper class for the [ilo restful api](https://hewlettpackard.github.io/python-ilorest-library/index.html)
 - You can, Start,Stop, get Server Status and wait untill finished booting up.
 - All Commands can also executed using the cli.
-- The object creates a session for you and logs you out when the object gets destroyed
-  - you can keep the object alive in a loop, so it doesnt take to long to repeat request
+- The ilohelper-object creates a session for you and logs you out when the object gets destroyed
+  - you can keep the object alive in a loop, so it doesnt take to long to repeat requests
     
 ## Installation
 
