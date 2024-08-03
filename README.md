@@ -2,7 +2,7 @@
 a little python wrapper class and cli tool for the [ilo restful api](https://hewlettpackard.github.io/python-ilorest-library/index.html)
 - You can, Start, Stop the server and get Server Status, or temperature information
 - ***🚀 start you server and wait untill the boot process finishes using a single command 🚀***
-  - use it in ansible, or any in any other cicd tool to for automated ssh connections
+  - use it in ansible, or in any other cicd tool to for automated ssh connections
 - All Commands can also get executed using the cli.
 - The ilohelper-object creates a session for you and logs you out when the object gets destroyed
   - you can keep the object alive in a loop, so it doesnt take to long to repeat requests
