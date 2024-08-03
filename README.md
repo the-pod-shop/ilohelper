@@ -1,13 +1,17 @@
 # ilohelper
 a little python wrapper class for the [ilo restful api](https://hewlettpackard.github.io/python-ilorest-library/index.html)
-
-
+- You can, Start,Stop, get Server Status and wait untill finished booting up.
+- All Commands can also executed using the cli.
+- The object creates a session for you and logs you out when the object gets destroyed
+  - you can keep the object alive in a loop, so it doesnt take to long to repeat request
+    
 ## Installation
 
 Requires Python and the `redfish` library. Install it using:
   ```bash
   pip install redfish
   ```
+
 ## Commands
 | Description | Method | Command |
 |---|---|---|
@@ -18,10 +22,8 @@ Requires Python and the `redfish` library. Install it using:
 | Wait until the server boots up | client.waitForBoot() | waitForBoot |
 
 
-
-
-
 ## Usage
+
 - via cli:
   ```bash
   $ python login.py <COMMAND> <ILO-IP> <ILO-USER> <ILO-PASSWORD> (<SERVER-IP>)
@@ -99,5 +101,4 @@ Requires Python and the `redfish` library. Install it using:
       [21, 47, 40, 30, 34, 28, 0, 0, 44, 25, 25, 30, 0, 0, 44, 36, 33, 24, 30, 34, 31, 30, 0, 40, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 26, 27, 28, 28, 27, 26, 23, 25, 27, 27]
     ``` 
     ---
-  - note that this script loggs you out of the session when the object gets destroyed.
-    - you can keep the object alive in a loop, so it doesnt take to long to repeat request 
+
