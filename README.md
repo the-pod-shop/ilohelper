@@ -9,7 +9,7 @@ a little python wrapper class for the [ilo restful api](https://hewlettpackard.g
 
 Requires Python and the `redfish` library. Install it using:
   ```bash
-  pip install redfish
+  $ pip install redfish
   ```
 
 ## Commands
@@ -30,7 +30,7 @@ Requires Python and the `redfish` library. Install it using:
   ```
 - via script:
   ```python
-     client = ilohelper(<COMMAND> <ILO-IP> <ILO-USER> <ILO-PASSWORD> (<SERVER-IP>)
+  $ client = ilohelper(<COMMAND> <ILO-IP> <ILO-USER> <ILO-PASSWORD> (<SERVER-IP>)
   ```
 - ***note that waitForBoot requires the optional server-ip argument for the ping command in the subprocess***
 --- 
