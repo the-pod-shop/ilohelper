@@ -39,7 +39,7 @@ Requires Python and the `redfish` library. Install it using:
   $ python ./ilohelper.py serverStatus 192.168.200.11 Administrator AGSBTGWW 
   ```
 
-  - respose:
+  - output:
      ```python
       sensor42-PCI 7 Zone has 25 degrees
       sensor43-PCI 8 Zone has 23 degrees
