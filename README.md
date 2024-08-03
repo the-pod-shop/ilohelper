@@ -15,11 +15,11 @@ Requires Python and the `redfish` library. Install it using:
 ## Commands
 | Description | Method | Command |
 |---|---|---|
-| Get temperature data | client.get_temperatures() | temperatures |
-| Get server status | client.get_server_status() | serverStatus |
-| Start the server | client.start_server() | startServer |
-| Stop the server | client.stop_server() | stopServer |
-| Wait until the server boots up | client.waitForBoot() | waitForBoot |
+| Get temperature data | ilohelper.get_temperatures() | temperatures |
+| Get server status | ilohelper.get_server_status() | serverStatus |
+| Start the server | ilohelper.start_server() | startServer |
+| Stop the server | ilohelper.stop_server() | stopServer |
+| Wait until the server boots up | ilohelper.waitForBoot() | waitForBoot |
 
 
 ## Usage
